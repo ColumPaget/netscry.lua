@@ -16,7 +16,16 @@ print("   -ar                                                 - use archive.org"
 print("   -ask                                                - use ask.ai");
 print("   -askai                                              - use ask.ai");
 print("   -tav                                                - use tavily.ai");
-print("   -gem                                                - use google gemini-flash");
+print("   -gem                                                - use google gemini-flash-lite-latest");
+print("   -gempro                                             - use google gemini-pro-latest");
+print("   -geml                                               - use google gemini-flash-lite-latest");
+print("   -gemf                                               - use google gemini-flash-latest");
+print("   -gem3.5                                             - use google gemini-3.5-flash-lite");
+print("   -gem3.5l                                            - use google gemini-3.5-flash-lite");
+print("   -gem3.5f                                            - use google gemini-3.5-flash");
+print("   -gem3.1                                             - use google gemini-3.1-flash-lite");
+print("   -gem3.1l                                            - use google gemini-3.1-flash-lite");
+print("   -gem3.1f                                            - use google gemini-3.1-flash");
 print("   -wp                                                 - use wikipedia");
 print("   -ls                                                 - use langsearch");
 print("   -so                                                 - use stackoverflow");
@@ -75,6 +84,16 @@ do
   elseif arg=="-askai" then query.sources=query.sources .. "ask_ai "
   elseif arg=="-tav" then query.sources=query.sources .. "tavily "
   elseif arg=="-gem" then query.sources=query.sources .. "gemini "
+  elseif arg=="-gempro" then query.sources=query.sources .. "gemini " ; query.model="gemini-pro-latest"
+  elseif arg=="-geml" then query.sources=query.sources .. "gemini " ; query.model="gemini-flash-lite-latest"
+  elseif arg=="-gemf" then query.sources=query.sources .. "gemini " ; query.model="gemini-flash-latest"
+  elseif arg=="-gem3.5" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.5-flash-lite"
+  elseif arg=="-gem3.5l" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.5-flash-lite"
+  elseif arg=="-gem3.5f" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.5-flash"
+  elseif arg=="-gem3.1" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.1-flash-lite"
+  elseif arg=="-gem3.1l" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.1-flash-lite"
+  elseif arg=="-gem3.1f" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.1-flash"
+  --elseif arg=="-gemtts" then query.sources=query.sources .. "gemini " ; query.model="gemini-3.1-flash-tts-preview"
   elseif arg=="-wp" then query.sources=query.sources .. "wikipedia "
   elseif arg=="-so" then query.sources=query.sources .. "stackoverflow "
   elseif arg=="-ls" then query.sources=query.sources .. "langsearch "

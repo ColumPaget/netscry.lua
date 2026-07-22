@@ -28,7 +28,7 @@ SUPPORTED SERVICES
 ==================
 
 * Duck Duck Go search
-* Google Gemini 'Flash' A.I. 
+* Google Gemini Text A.I.
 * Ask A.I.
 * Tavily A.I.
 * LangSearch
@@ -104,7 +104,25 @@ command line 'service' options are:
 -tav
 : query tavily.au
 -gem
-: query google gemini-flash ai
+: query google gemini-flash-lite-latest ai
+-gempro
+: query google gemini-pro-latest ai
+-geml
+: query google gemini-flash-lite-latest ai
+-gemf
+: query google gemini-flash-latest ai
+-gem3.5
+: query google gemini-3.5-flash-lite
+-gem3.5l
+: query google gemini-3.5-flash-lite
+-gem3.5f
+: query google gemini-3.5-flash
+-gem3.1
+: query google gemini-3.1-flash-lite
+-gem3.1l
+: query google gemini-3.1-flash-lite
+-gem3.1f
+: query google gemini-3.1-flash
 -wp
 : query wikipedia (currently just returns a summary of a wikipedia page)
 -ls
