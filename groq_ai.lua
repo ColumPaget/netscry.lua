@@ -158,7 +158,7 @@ query=function(self, query)
 
 if query.question == "!models" then return(self:list_models()) end
 
--- return(self:transact(query))
+return(self:transact(query))
 end,
 
 }
