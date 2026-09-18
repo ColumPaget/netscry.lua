@@ -26,6 +26,7 @@ print("   -gem3.5f                                            - use google gemin
 print("   -gem3.1                                             - use google gemini-3.1-flash-lite");
 print("   -gem3.1l                                            - use google gemini-3.1-flash-lite");
 print("   -gem3.1f                                            - use google gemini-3.1-flash");
+print("   -groq                                               - use groq AI");
 print("   -wp                                                 - use wikipedia");
 print("   -ls                                                 - use langsearch");
 print("   -so                                                 - use stackoverflow");
@@ -52,6 +53,8 @@ print("   -info                                               - return info abou
 print("   -topic <topic>                                      - specify topic/category/subject for search (gnews, bigbookapi)")
 print("   -t <topic>                                          - specify topic/category/subject for search (gnews, bigbookapi)")
 print("   -list-topics                                        - print list of topics for specified source")
+print("   -model <model>                                      - AI model to use (use -list-models to get a list of names)")
+print("   -list-models                                        - print list of AI models for specified source")
 print("   -lang <iso code>                                    - specify language iso-code for search (gnews, worldnewsapi)")
 print("   -l <iso code>                                       - specify language iso-code for search (gnews, worldnewsapi)")
 print("   -country <country code>                             - specify country iso-code for search (gnews, worldnewsapi)")
@@ -83,6 +86,7 @@ do
   elseif arg=="-ask" then query.sources=query.sources .. "ask_ai "
   elseif arg=="-askai" then query.sources=query.sources .. "ask_ai "
   elseif arg=="-tav" then query.sources=query.sources .. "tavily "
+  elseif arg=="-groq" then query.sources=query.sources .. "groq "
   elseif arg=="-gem" then query.sources=query.sources .. "gemini "
   elseif arg=="-gempro" then query.sources=query.sources .. "gemini " ; query.model="gemini-pro-latest"
   elseif arg=="-geml" then query.sources=query.sources .. "gemini " ; query.model="gemini-flash-lite-latest"
@@ -110,8 +114,9 @@ do
   elseif arg=="-ol" then query.sources=query.sources .. "openlibrary"
   elseif arg=="-gb" then query.sources=query.sources .. "gutenberg"
   elseif arg=="-fo" then query.sources=query.sources .. "fossies"
-  elseif arg=="-info" then query.question="!info" --anyting to do with sources goes through a query
+  elseif arg=="-info" then query.question="!info" --anything to do with sources goes through a query
   elseif arg=="-list-topics" then query.question="!topics" -- anything to do with sources goes through as a query
+  elseif arg=="-list-models" then query.question="!models" -- anything to do with sources goes through as a query
   elseif arg=="-top" then query.question="!top"
   elseif arg=="-new" then query.question="!new"
   elseif arg=="-l" or arg=="-lang"
@@ -125,6 +130,10 @@ do
   elseif arg=="-t" or arg=="-topic"
   then
   query.category=cmd[i+1]
+  cmd[i+1]=""
+  elseif arg=="-model"
+  then
+  query.model=cmd[i+1]
   cmd[i+1]=""
   elseif arg=="-item"
   then

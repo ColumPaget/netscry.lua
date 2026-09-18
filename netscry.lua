@@ -693,6 +693,63 @@ needs_api_key=true,
 url="https://gemini.google.com/",
 
 
+--[[ example model listing
+    {
+      "name": "models/gemini-2.5-flash",
+      "version": "001",
+      "displayName": "Gemini 2.5 Flash",
+      "description": "Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.",
+      "inputTokenLimit": 1048576,
+      "outputTokenLimit": 65536,
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ],
+      "temperature": 1,
+      "topP": 0.95,
+      "topK": 64,
+      "maxTemperature": 2,
+      "thinking": true
+    },
+]]--
+
+
+
+list_models=function(self)
+local S, str, json, models, item
+local response={}
+
+
+response.source=self.name
+response.query="list-models"
+response.answer=""
+
+
+S=stream.STREAM("https://generativelanguage.googleapis.com/v1beta/models?key="..self.api_key, "r")
+if S ~= nil
+then
+  str=S:readdoc()
+
+  io.stderr:write(str.."\n")
+  json=dataparser.PARSER("json", str)
+  models=json:open("models")
+  item=models:next()
+  while item ~= nil
+  do
+    response.answer=response.answer .. strutil.padto(item:value("name"), " ", 40) .. "  " .. item:value("description") .. "\n"
+    item=models:next()
+  end
+
+  S:close()
+end
+
+return response
+end,
+
+
+
 parse_content=function(self, item)
 local content
 local output=""
@@ -741,54 +798,6 @@ return response
 end,
 
 
---[[ example model listing
-    {
-      "name": "models/gemini-2.5-flash",
-      "version": "001",
-      "displayName": "Gemini 2.5 Flash",
-      "description": "Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 65536,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2,
-      "thinking": true
-    },
-]]--
-
-list_models=function(self)
-local S, str, json, models
-
-S=stream.STREAM("https://generativelanguage.googleapis.com/v1beta/models?key="..self.api_key, "r")
-if S ~= nil
-then
-str=S:readdoc()
-
-
-json=dataparser.PARSER("json", str)
-models=json:open("models")
-item=models:next()
-while item ~= nil
-do
-print(item:value("name"))
-item=models:next()
-end
-
-S:close()
-end
-
-
-end,
-
-
-
 build_query_json=function(self, query)
 local model, len
 local query_json=""
@@ -816,12 +825,8 @@ return query_json, len
 end,
 
 
-query=function(self, query)
+transact=function(self, query)
 local S, query_json, len, responsecode, doc
-
---self:list_models()
-
-settings.debug=true
 
 query_json,len=self:build_query_json(query)
 
@@ -840,7 +845,7 @@ then
 
   if responsecode ~= "200"
   then
-    Out:puts("~rERROR:~0 Server Responds: "..S:getvalue("HTTP:ResponseReason"))
+    Out:puts("~rERROR:~0 Server Responds: ["..responsecode .. "]  " .. S:getvalue("HTTP:ResponseReason"))
     Out:puts(doc)
   else
     if settings.debug == true then io.stderr:write(doc.."\n") end
@@ -849,6 +854,178 @@ then
 end
 
 return nil
+end,
+
+
+query=function(self, query)
+
+if query.question == "!models" then return(self:list_models()) end
+
+-- return(self:transact(query))
+end,
+
+}
+
+
+groq_ai={
+name="groq",
+short_name="groq",
+type="ai",
+needs_api_key=true,
+url="https://api.groq.com/openai/v1/responses",
+
+
+list_models=function(self)
+local S, str, json, models, item
+local response={}
+
+
+response.source=self.name
+response.query="list-models"
+response.answer=""
+
+
+S=stream.STREAM("https://api.groq.com/openai/v1/models", "r Authorization='BEARER "..self.api_key.."'")
+if S ~= nil
+then
+  str=S:readdoc()
+  
+  io.stderr:write(str.."\n")
+  json=dataparser.PARSER("json", str)
+  models=json:open("data")
+  item=models:next()
+  while item ~= nil
+  do
+    response.answer=response.answer .. strutil.padto(item:value("id"), " ", 40) .. "  " .. strutil.padto(item:value("owned_by"), " ", 20)  .. "  "
+
+    str=JSONStringifyArray(item:open("input_modalities"))
+    if strutil.strlen(str) > 0 then response.answer=response.answer.. "input:"..str.. " " end
+
+    str=JSONStringifyArray(item:open("output_modalities"))
+    if strutil.strlen(str) > 0 then response.answer=response.answer.. "output:"..str.. " " end
+
+    response.answer=response.answer.."\n"
+
+    item=models:next()
+  end
+  
+  S:close()
+end
+
+return response
+end,
+
+
+
+
+parse_content=function(self, item)
+local content
+local output=""
+
+content=item:open("content")
+if content ~= nil
+then
+  item=content:next()
+  while item ~= nil
+  do
+    if item:value("type") == "output_text"
+    then
+    output=output .. item:value("text")
+    end
+    item=content:next()
+  end
+end
+
+
+return output
+end,
+
+
+
+parse_response=function(self, json, query)
+local P, steps, item
+local str=""
+local response={}
+
+response.source=self.name
+response.query=query.question
+
+P=dataparser.PARSER("json", json)
+steps=P:open("output")
+if steps ~= nil
+then
+   item=steps:next()
+   while item ~= nil
+   do
+     str=str..self:parse_content(item)
+     item=steps:next()
+   end
+   
+   response.answer=markdown:convert("ansi", strutil.unQuote(str))
+end
+
+return response
+end,
+
+
+
+build_query_json=function(self, query)
+local model, len
+local query_json=""
+
+model=query.model
+if strutil.strlen(model) == 0 then model="openai/gpt-oss-20b" end
+
+query_json=query_json .. "{\"model\": \"" .. model .."\""
+query_json=query_json .. ",\n\"input\": \""..query.question .. "\""
+query_json=query_json .."}"
+
+len=strutil.strlen(query_json)
+
+return query_json, len
+end,
+
+
+
+transact=function(self, query)
+local S, query_json, len, responsecode, doc
+
+query_json,len=self:build_query_json(query)
+
+process.lu_set("HTTP:Debug", "Y")
+
+S=stream.STREAM(self.url, "w Authorization='Bearer "..self.api_key.. "' Content-Type='application/json' Content-Length="..tostring(len))
+if S ~= nil
+then
+  S:writeln(query_json)
+  S:commit()
+
+  if settings.debug == true then io.stderr:write(query_json.."\n") end
+
+  responsecode=S:getvalue("HTTP:ResponseCode")
+  doc=S:readdoc()
+  S:close()
+
+
+  if responsecode ~= "200"
+  then
+    Out:puts("~rERROR:~0 Server Responds: ["..responsecode .. "]  " .. S:getvalue("HTTP:ResponseReason"))
+    Out:puts(doc)
+  else
+    if settings.debug == true then io.stderr:write(doc.."\n") end
+    return self:parse_response(doc, query)
+  end
+end
+
+return nil
+end,
+
+
+query=function(self, query)
+
+if query.question == "!models" then return(self:list_models()) end
+
+-- return(self:transact(query))
 end,
 
 }
@@ -2921,6 +3098,7 @@ self:add("langsearch", langsearch)
 self:add("stackexchange", stackexchange)
 self:add("ask_ai", ask_ai)
 self:add("gemini", google_ai)
+self:add("groq", groq_ai)
 self:add("tavily", tavily)
 self:add("dictionary_dev", dictionary_dev)
 self:add("bighugethesaurus", bighugethesaurus)
@@ -3289,6 +3467,7 @@ print("   -gem3.5f                                            - use google gemin
 print("   -gem3.1                                             - use google gemini-3.1-flash-lite");
 print("   -gem3.1l                                            - use google gemini-3.1-flash-lite");
 print("   -gem3.1f                                            - use google gemini-3.1-flash");
+print("   -groq                                               - use groq AI");
 print("   -wp                                                 - use wikipedia");
 print("   -ls                                                 - use langsearch");
 print("   -so                                                 - use stackoverflow");
@@ -3315,6 +3494,8 @@ print("   -info                                               - return info abou
 print("   -topic <topic>                                      - specify topic/category/subject for search (gnews, bigbookapi)")
 print("   -t <topic>                                          - specify topic/category/subject for search (gnews, bigbookapi)")
 print("   -list-topics                                        - print list of topics for specified source")
+print("   -model <model>                                      - AI model to use (use -list-models to get a list of names)")
+print("   -list-models                                        - print list of AI models for specified source")
 print("   -lang <iso code>                                    - specify language iso-code for search (gnews, worldnewsapi)")
 print("   -l <iso code>                                       - specify language iso-code for search (gnews, worldnewsapi)")
 print("   -country <country code>                             - specify country iso-code for search (gnews, worldnewsapi)")
@@ -3346,6 +3527,7 @@ do
   elseif arg=="-ask" then query.sources=query.sources .. "ask_ai "
   elseif arg=="-askai" then query.sources=query.sources .. "ask_ai "
   elseif arg=="-tav" then query.sources=query.sources .. "tavily "
+  elseif arg=="-groq" then query.sources=query.sources .. "groq "
   elseif arg=="-gem" then query.sources=query.sources .. "gemini "
   elseif arg=="-gempro" then query.sources=query.sources .. "gemini " ; query.model="gemini-pro-latest"
   elseif arg=="-geml" then query.sources=query.sources .. "gemini " ; query.model="gemini-flash-lite-latest"
@@ -3373,8 +3555,9 @@ do
   elseif arg=="-ol" then query.sources=query.sources .. "openlibrary"
   elseif arg=="-gb" then query.sources=query.sources .. "gutenberg"
   elseif arg=="-fo" then query.sources=query.sources .. "fossies"
-  elseif arg=="-info" then query.question="!info" --anyting to do with sources goes through a query
+  elseif arg=="-info" then query.question="!info" --anything to do with sources goes through a query
   elseif arg=="-list-topics" then query.question="!topics" -- anything to do with sources goes through as a query
+  elseif arg=="-list-models" then query.question="!models" -- anything to do with sources goes through as a query
   elseif arg=="-top" then query.question="!top"
   elseif arg=="-new" then query.question="!new"
   elseif arg=="-l" or arg=="-lang"
@@ -3388,6 +3571,10 @@ do
   elseif arg=="-t" or arg=="-topic"
   then
   query.category=cmd[i+1]
+  cmd[i+1]=""
+  elseif arg=="-model"
+  then
+  query.model=cmd[i+1]
   cmd[i+1]=""
   elseif arg=="-item"
   then

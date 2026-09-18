@@ -1,34 +1,11 @@
 
-google_ai={
-name="gemini",
-short_name="gem",
+
+groq_ai={
+name="groq",
+short_name="groq",
 type="ai",
 needs_api_key=true,
-url="https://gemini.google.com/",
-
-
---[[ example model listing
-    {
-      "name": "models/gemini-2.5-flash",
-      "version": "001",
-      "displayName": "Gemini 2.5 Flash",
-      "description": "Stable version of Gemini 2.5 Flash, our mid-size multimodal model that supports up to 1 million tokens, released in June of 2025.",
-      "inputTokenLimit": 1048576,
-      "outputTokenLimit": 65536,
-      "supportedGenerationMethods": [
-        "generateContent",
-        "countTokens",
-        "createCachedContent",
-        "batchGenerateContent"
-      ],
-      "temperature": 1,
-      "topP": 0.95,
-      "topK": 64,
-      "maxTemperature": 2,
-      "thinking": true
-    },
-]]--
-
+url="https://api.groq.com/openai/v1/responses",
 
 
 list_models=function(self)
@@ -41,26 +18,36 @@ response.query="list-models"
 response.answer=""
 
 
-S=stream.STREAM("https://generativelanguage.googleapis.com/v1beta/models?key="..self.api_key, "r")
+S=stream.STREAM("https://api.groq.com/openai/v1/models", "r Authorization='BEARER "..self.api_key.."'")
 if S ~= nil
 then
   str=S:readdoc()
-
+  
   io.stderr:write(str.."\n")
   json=dataparser.PARSER("json", str)
-  models=json:open("models")
+  models=json:open("data")
   item=models:next()
   while item ~= nil
   do
-    response.answer=response.answer .. strutil.padto(item:value("name"), " ", 40) .. "  " .. item:value("description") .. "\n"
+    response.answer=response.answer .. strutil.padto(item:value("id"), " ", 40) .. "  " .. strutil.padto(item:value("owned_by"), " ", 20)  .. "  "
+
+    str=JSONStringifyArray(item:open("input_modalities"))
+    if strutil.strlen(str) > 0 then response.answer=response.answer.. "input:"..str.. " " end
+
+    str=JSONStringifyArray(item:open("output_modalities"))
+    if strutil.strlen(str) > 0 then response.answer=response.answer.. "output:"..str.. " " end
+
+    response.answer=response.answer.."\n"
+
     item=models:next()
   end
-
+  
   S:close()
 end
 
 return response
 end,
+
 
 
 
@@ -74,7 +61,10 @@ then
   item=content:next()
   while item ~= nil
   do
+    if item:value("type") == "output_text"
+    then
     output=output .. item:value("text")
+    end
     item=content:next()
   end
 end
@@ -82,7 +72,6 @@ end
 
 return output
 end,
-
 
 
 
@@ -95,7 +84,7 @@ response.source=self.name
 response.query=query.question
 
 P=dataparser.PARSER("json", json)
-steps=P:open("steps")
+steps=P:open("output")
 if steps ~= nil
 then
    item=steps:next()
@@ -112,25 +101,16 @@ return response
 end,
 
 
+
 build_query_json=function(self, query)
 local model, len
 local query_json=""
 
 model=query.model
-if strutil.strlen(model) == 0 then model="gemini-flash-lite-latest" end
+if strutil.strlen(model) == 0 then model="openai/gpt-oss-20b" end
 
 query_json=query_json .. "{\"model\": \"" .. model .."\""
 query_json=query_json .. ",\n\"input\": \""..query.question .. "\""
-
---[[ handling voice is too much work right now
-if model == "gemini-3.1-flash-tts-preview"
-then
-query_json=query_json .. ",\n\"response_format\": {\"type\": \"audio\"},\n"
-query_json=query_json .. "\"generation_config\": {\"speech_config\": [{\"voice\": \"Kore\"}]},\n"
-query_json=query_json .. "\"stream\": false\n"
-end
-]]--
-
 query_json=query_json .."}"
 
 len=strutil.strlen(query_json)
@@ -139,12 +119,15 @@ return query_json, len
 end,
 
 
+
 transact=function(self, query)
 local S, query_json, len, responsecode, doc
 
 query_json,len=self:build_query_json(query)
 
-S=stream.STREAM("https://generativelanguage.googleapis.com/v1beta/interactions?key="..self.api_key, "w Content-Type=application/json Content-Length="..tostring(len))
+process.lu_set("HTTP:Debug", "Y")
+
+S=stream.STREAM(self.url, "w Authorization='Bearer "..self.api_key.. "' Content-Type='application/json' Content-Length="..tostring(len))
 if S ~= nil
 then
   S:writeln(query_json)

@@ -29,6 +29,7 @@ SUPPORTED SERVICES
 
 * Duck Duck Go search
 * Google Gemini Text A.I.
+* Groq Text A.I.
 * Ask A.I.
 * Tavily A.I.
 * LangSearch
@@ -103,6 +104,8 @@ command line 'service' options are:
 : query ask ai
 -tav
 : query tavily.au
+-groq
+: query groq ai
 -gem
 : query google gemini-flash-lite-latest ai
 -gempro
@@ -165,17 +168,25 @@ command line options related to source queries (and requiring one of the above s
 
 ```
 -info
-:print info about a source
+: print info about a source
 -n <max>
-:set maximum number of results to return for sites supporting this feature (currently supported: tavily.ai, bigbookapi, worldnewsapi, langsearch)
+: set maximum number of results to return for sites supporting this feature (currently supported: tavily.ai, bigbookapi, worldnewsapi, langsearch)
 -top
-:return 'top' results (usually today's 'top' news) (supported: gnews, worldnewsapi, hackernews, spaceflightnewsapi, fossies)
+: return 'top' results (usually today's 'top' news) (supported: gnews, worldnewsapi, hackernews, spaceflightnewsapi, fossies)
 -new
-:return 'new' results (dbooks, hackernews, fossies)
--cat <category>
-: specify category/subject for search (gnews, bigbookapi)
--C <category>
-: specify category/subject for search (gnews, bigbookapi)
+: return 'new' results (dbooks, hackernews, fossies)
+-info
+: return info about a source
+-topic <topic>
+: specify topic/category/subject for search (gnews, bigbookapi)
+-t <topic>
+: specify topic/category/subject for search (gnews, bigbookapi)
+-list-topics
+: print list of topics for specified source
+-model <model>
+: select model to use with AI services (groq_ai, google_ai)
+-list-models
+: print list of AI models for specified source
 -lang <iso code>
 : specify language iso-code for search (gnews, worldnewsapi)
 -l <iso code>
